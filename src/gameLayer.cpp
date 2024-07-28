@@ -1,17 +1,14 @@
 #include "gameLayer.h"
 #include <vector>
 #include <iostream>
-#include "Tile.h"
-#include "Player.h"
-#include "rlgl.h"
-#include "raymath.h"
+#include <GameObjects.h>
+#include "config.h"
 
 struct GameplayData
 {
 	bool isPaused;
-	std::vector<Tile> tiles;
-	Player player;
-	glm::vec2 windowSize;
+	size_t playerID;
+	glm::i64vec2 windowSize;
 	Camera2D camera;
 };
 
@@ -29,19 +26,20 @@ void initGame(const int width, const int height)
 
 	data.isPaused = true;
 
-	data.player.pos = glm::vec2(100, 200);
-	data.player.size = glm::vec2(50, 75);
+	data.playerID = Objects::addEntity();
+	Objects::entities[data.playerID]->pos = glm::vec2(0,0);
+	Objects::entities[data.playerID]->size = glm::vec2(50, 75);
 
-	data.camera.target = Vector2({ width / 2.f, height / 2.f });
-	data.camera.offset = Vector2({ width / 2.f, height / 2.f });
+	data.camera.target = Vector2({0.f,0.f});
+	data.camera.offset = Vector2({ width / 2.f, height/2.f });
 	data.camera.rotation = 0.f;
-	data.camera.zoom = 1.0f;
+	data.camera.zoom = 0.8f;
 }
 
 void resetGame()
 {
-	data.player.pos = glm::vec2(100, 200);
-	data.player.vel = glm::vec2(0, -40);
+	Objects::entities[data.playerID]->pos = glm::vec2(0,0);
+	Objects::entities[data.playerID]->vel = glm::vec2(0, 0);
 }
 
 void gameLogic(float deltaTime, unsigned short frame)
@@ -51,41 +49,37 @@ void gameLogic(float deltaTime, unsigned short frame)
 
 	if (!data.isPaused)
 	{
-		if ((GetWorldToScreen2D(Vector2({ data.player.pos.x, data.player.pos.y }), data.camera).x < (data.windowSize.x / 4)) || (GetWorldToScreen2D(Vector2({ data.player.pos.x, data.player.pos.y }), data.camera).x > (data.windowSize.x / 4 * 3))) { 
-			data.camera.target.x -= (data.camera.target.x - data.player.pos.x) * 0.02;
-		}
-		if ((data.player.collisionSurface & DOWN) && data.camera.target.y != data.player.pos.y)
-		{
-			data.camera.target.y -= (data.camera.target.y - data.player.pos.y) * 0.2;
-		}
 
+		// Update camera - update y on landing, update x when player is near edges
+		if ((GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).x < (data.windowSize.x / 4)) || (GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).x > (data.windowSize.x / 4 * 3))) { 
+			data.camera.target.x -= (data.camera.target.x - Objects::entities[data.playerID]->pos.x) * 0.02;
+		}
+		if ((Objects::entities[data.playerID]->collisionSurface & Surface::DOWN) && data.camera.target.y != Objects::entities[data.playerID]->pos.y)
+		{
+			data.camera.target.y -= (data.camera.target.y - Objects::entities[data.playerID]->pos.y) * 0.2;
+		}
 		data.camera.offset = Vector2({ data.windowSize.x / 2.f, data.windowSize.y / 2.f });
 
-		data.player.vel.y += 4;
+		// Update player
+		Objects::entities[data.playerID]->vel.y += 4;
 		if (IsKeyDown(KEY_A))
 		{
-			data.player.vel.x = -10;
+			Objects::entities[data.playerID]->vel.x = -10;
 		}
 		else if (IsKeyDown(KEY_D))
 		{
-			data.player.vel.x = 10;
+			Objects::entities[data.playerID]->vel.x = 10;
 		}
-		if (IsKeyDown(KEY_SPACE) && (data.player.collisionSurface & DOWN))
+		if (IsKeyDown(KEY_SPACE) && (Objects::entities[data.playerID]->collisionSurface & Surface::DOWN))
 		{
-			data.player.vel.y = -35;
+			Objects::entities[data.playerID]->vel.y = -35;
 		}
 
-		std::vector<glm::vec2> tiles_vec;
-		for (auto& tile : data.tiles)
-		{
-			tiles_vec.push_back(tile.pos);
-		}
-
-		data.player.move(tiles_vec);
-		data.player.vel.x -= 3;
-		if (data.player.collisionSurface & DOWN) data.player.vel.y = 0;
-		if (data.player.vel.x < 0) data.player.vel.x = 0;
-		if (GetWorldToScreen2D(Vector2({ data.player.pos.x, data.player.pos.y }), data.camera).y > data.windowSize.y + 200) resetGame();
+		Objects::move(data.playerID);
+		Objects::entities[data.playerID]->vel.x -= 3;
+		if (Objects::entities[data.playerID]->collisionSurface & Surface::DOWN) Objects::entities[data.playerID]->vel.y = 0;
+		if (Objects::entities[data.playerID]->vel.x < 0) Objects::entities[data.playerID]->vel.x = 0;
+		if (GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).y > data.windowSize.y + 200) resetGame();
 	}
 
 #pragma endregion
@@ -96,28 +90,32 @@ void gameLogic(float deltaTime, unsigned short frame)
 	{
 		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
-			Tile newTile;
+			Tile *newTile = new Tile;
 			Vector2 mousePos = GetScreenToWorld2D(GetMousePosition(), data.camera);
-			newTile.pos = glm::vec2((int)mousePos.x / 50 * 50, (int)mousePos.y / 50 * 50);
+			int adjustedX = (int)floor(mousePos.x / tileSize) * tileSize;
+			int adjustedY = (int)ceil(mousePos.y / tileSize) * tileSize;
+			newTile->pos = glm::vec2(adjustedX, adjustedY);
 
 			bool found = false;
-			for (auto& tile : data.tiles)
+			for (auto& tile : Objects::tiles)
 			{
-				if (newTile.pos != tile.pos)  continue;
+				if (newTile->pos != tile->pos)  continue;
 				found = true;
 				break;
 			}
-			if (!found) { data.tiles.push_back(newTile); }
+			if (!found) { Objects::tiles.push_back(newTile); }
 
 		}
 		else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 		{
 			Vector2 mousePos = GetScreenToWorld2D(GetMousePosition(), data.camera);
-			for (size_t i = 0; i < data.tiles.size(); i++)
+			int adjustedX = (int)floor(mousePos.x / tileSize) * tileSize;
+			int adjustedY = (int)ceil(mousePos.y / tileSize) * tileSize;
+			for (size_t i = 0; i < Objects::tiles.size(); i++)
 			{
-				if (data.tiles[i].pos == glm::vec2((int)mousePos.x / 50 * 50, (int)mousePos.y / 50 * 50))
+				if (Objects::tiles[i]->pos == glm::i64vec2(adjustedX, adjustedY))
 				{
-					data.tiles.erase(data.tiles.begin() + i);
+					Objects::tiles.erase(Objects::tiles.begin() + i);
 					break;
 				}
 			}
@@ -130,25 +128,24 @@ void gameLogic(float deltaTime, unsigned short frame)
 		data.camera.zoom += ((float)GetMouseWheelMove() * 0.05f);
 	}
 
-#pragma endregion
+#pragma endregion temporaray until an external level editor and loading system is developed
 }
 
 void renderGame(unsigned short frame)
 {
 	BeginMode2D(data.camera);
-	for (auto& tile : data.tiles)
-	{
-		tile.render();
-	}
-	data.player.render();
+	Objects::renderAll();
 
 	// Level editor rendering
 	if (data.isPaused)
 	{
 		Vector2 mousePos = GetScreenToWorld2D(GetMousePosition(), data.camera);
-		DrawRectangle((int)mousePos.x / 50 * 50, (int)mousePos.y / 50 * 50, 50, 50, Color({ 150,100,100,100 }));
+		int adjustedX = (int)floor(mousePos.x / tileSize) * tileSize;
+		int adjustedY = (int)ceil(mousePos.y / tileSize) * tileSize;
+		DrawRectangle(adjustedX, adjustedY, 50, 50, Color({ 150,100,100,100 }));
+		EndMode2D();
+		DrawText("Paused", 40, 40, 50, WHITE);
 	}
-	EndMode2D();
 }
 
 void closeGame()

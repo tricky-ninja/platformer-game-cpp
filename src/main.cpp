@@ -6,8 +6,8 @@
 
 int main()
 {
-	const int width = 1000;
-	const int height = 900;
+	const int width = 1920;
+	const int height = 1080;
 	InitWindow(width, height, "Platformer");
 	SetTargetFPS(60);
 

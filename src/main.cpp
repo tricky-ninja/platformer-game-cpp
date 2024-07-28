@@ -13,6 +13,7 @@ int main()
 
 	initGame(width, height);
 	auto stop = std::chrono::high_resolution_clock::now();
+	unsigned short frame = 1;
 	while (!WindowShouldClose())
 	{
 		auto start = std::chrono::high_resolution_clock::now();
@@ -23,11 +24,12 @@ int main()
 		float augmentedDeltaTime = deltaTime;
 		if (augmentedDeltaTime > 1.f / 10) { augmentedDeltaTime = 1.f / 10; }
 
-		gameLogic(augmentedDeltaTime);
+		gameLogic(augmentedDeltaTime, frame);
 		BeginDrawing();
 		ClearBackground(BLACK);
-		renderGame();
+		renderGame(frame);
 		EndDrawing();
+		frame = (frame + 1) % 61;
 	}
 	CloseWindow();
 }

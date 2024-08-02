@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.16)
 # DELETE THE OUT FOLDER AFTER CHANGING THIS
 option(PRODUCTION_BUILD "Enable this to ship the exe" OFF)
 
-
 if(MSVC) 
 	# Static linking the runtime libraries
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Release>:Release>")

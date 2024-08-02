@@ -1,5 +1,7 @@
 #include "GameObjects.h"
 #include "config.h"
+#include <iostream>
+#include <AssetManager.h>
 
 namespace Objects
 {
@@ -9,7 +11,20 @@ namespace Objects
 
 void Tile::render()
 {
-	DrawRectangle(this->pos.x, this->pos.y, tileSize,tileSize, WHITE);
+	if (tilesetID >= Assets::gameTextures.size())
+	{
+		DrawRectangle(this->pos.x, this->pos.y, tileSize, tileSize, WHITE);
+	}
+	else
+	{
+		size_t tileWidth = 8;
+		size_t tileHeight = 8;
+
+		Rectangle src = { (float)(tilesetPos.x * tileWidth), (float)(tilesetPos.y * tileHeight), (float)tileWidth, (float)tileHeight };
+		Rectangle dst = { (float)pos.x + tileSize, (float)pos.y + tileSize, (float)tileSize, (float)tileSize };
+
+		DrawTexturePro(*Assets::gameTextures[tilesetID], src, dst, Vector2({ dst.width, dst.height }), 0.f, WHITE);
+	}
 }
 
 bool Entity::isCollidingWithTile(const glm::vec2& tile)
@@ -31,12 +46,12 @@ bool Entity::willCollideWithTile(const glm::vec2& tile, const glm::vec2& moveAmt
 
 void Entity::render()
 {
-	DrawRectangle(pos.x - size.x / 2, pos.y - size.y/2, size.x, size.y, RED);
+	DrawRectangle(pos.x - size.x / 2, pos.y - size.y / 2, size.x, size.y, RED);
 }
 
 size_t Objects::addEntity()
 {
-	Entity *e = new Entity();
+	Entity* e = new Entity();
 	entities.push_back(e);
 	return entities.size() - 1;
 }
@@ -48,6 +63,11 @@ bool Objects::isColliding(size_t entityID)
 
 	for (auto tile : tiles)
 	{
+		if (!tile->hasCollision) continue;
+		if (tile->type == TILE_ONEWAY)
+		{
+			if (e->pos.y + e->size.y / 2 > tile->pos.y) continue;
+		}
 		if (e->isCollidingWithTile(tile->pos)) return true;
 	}
 
@@ -61,25 +81,33 @@ bool Objects::willCollide(size_t entityID, glm::vec2 moveAmt)
 
 	for (auto tile : tiles)
 	{
-		if (e->willCollideWithTile(tile->pos,moveAmt)) return true;
+		if (!tile->hasCollision) continue;
+		if (tile->type == TILE_ONEWAY)
+		{
+			if (e->pos.y + e->size.y/2 > tile->pos.y) continue;
+		}
+		if (e->willCollideWithTile(tile->pos, moveAmt)) return true;
 	}
 
 	return false;
 }
 
-void Objects::moveX(size_t entityID)
+void Objects::moveX(size_t entityID, float deltaTime)
 {
 	assert(entities.size() > entityID);
 
 	Entity* e = entities[entityID];
 	float amt = e->vel.x;
 
-	e->moveRemainder.x += amt;
+	// We only move by whole numbers the remainder is stored,
+	// it can be used in the next frame if the remainder adds up to a whole number
+	e->moveRemainder.x += amt * deltaTime;
 	int move = (int)e->moveRemainder.x / 1;
 	if (!move) return;
 	e->moveRemainder.x -= move;
 	int sign = move / abs(move);
 
+	// Move by 1 pixel and check for collisions
 	while (move != 0)
 	{
 		if (!willCollide(entityID, glm::vec2(sign, 0)))
@@ -97,19 +125,22 @@ void Objects::moveX(size_t entityID)
 	}
 }
 
-void Objects::moveY(size_t entityID)
+void Objects::moveY(size_t entityID, float deltaTime)
 {
 	assert(entities.size() > entityID);
 
 	Entity* e = entities[entityID];
 	float amt = e->vel.y;
 
-	e->moveRemainder.y += amt;
+	// We only move by whole numbers the remainder is stored,
+	// it can be used in the next frame if the remainder adds up to a whole number
+	e->moveRemainder.y += amt * deltaTime;
 	int move = (int)e->moveRemainder.y;
 	if (!move) return;
 	e->moveRemainder.y -= move;
 	int sign = move / abs(move);
 
+	// Move by 1 pixel and check for collisions
 	while (move != 0)
 	{
 		if (!willCollide(entityID, glm::vec2(0, sign)))
@@ -127,10 +158,10 @@ void Objects::moveY(size_t entityID)
 	}
 }
 
-void Objects::move(size_t entityID)
+void Objects::move(size_t entityID, float deltaTime)
 {
-	moveX(entityID);
-	moveY(entityID);
+	moveX(entityID, deltaTime);
+	moveY(entityID, deltaTime);
 }
 
 void Objects::renderAll()
@@ -151,4 +182,18 @@ size_t Objects::addTile()
 	Tile* t = new Tile;
 	tiles.push_back(t);
 	return tiles.size() - 1;
+}
+
+void Objects::freeObjects()
+{
+	for (Tile* tile : tiles)
+	{
+		free(tile);
+	}
+
+	for (Entity* entity : entities)
+	{
+		free(entity);
+	}
+
 }

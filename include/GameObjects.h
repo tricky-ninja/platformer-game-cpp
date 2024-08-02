@@ -25,8 +25,8 @@ struct Tile
 	glm::i64vec2 pos = {0,0};
 	bool hasCollision=true;
 	TileType type=TILE_NORMAL;
-	std::string tileset="";
-	glm::i64vec2 tilesetPos = {0,0};
+	size_t tilesetID=0;
+	glm::i64vec2 tilesetPos = {2,1};
 
 	void render();
 };
@@ -58,7 +58,9 @@ namespace Objects
 	// Entity functions
 	bool isColliding(size_t entityID);
 	bool willCollide(size_t entityID, glm::vec2 moveAmt);
-	void moveX(size_t entityID);
-	void moveY(size_t entityID);
-	void move(size_t entityID);
+	void moveX(size_t entityID, float deltaTime);
+	void moveY(size_t entityID, float deltaTime);
+	void move(size_t entityID, float deltaTime);
+
+	void freeObjects();
 };

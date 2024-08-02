@@ -1,21 +1,24 @@
 #include <glm/glm.hpp>
 #include <raylib.h>
 #include <chrono>
+#include <iostream>
 
 #include "gameLayer.h"
 
 int main()
 {
-	const int width = 1920;
-	const int height = 1080;
+	const int width = 1280;
+	const int height = 720;
 	InitWindow(width, height, "Platformer");
-	SetTargetFPS(60);
+	//SetTargetFPS(144);
 
 	initGame(width, height);
+
 	auto stop = std::chrono::high_resolution_clock::now();
-	unsigned short frame = 1;
 	while (!WindowShouldClose())
 	{
+
+		// Delta time calculations
 		auto start = std::chrono::high_resolution_clock::now();
 
 		float deltaTime = (std::chrono::duration_cast<std::chrono::nanoseconds>(start - stop)).count() / 1000000000.0;
@@ -23,13 +26,16 @@ int main()
 
 		float augmentedDeltaTime = deltaTime;
 		if (augmentedDeltaTime > 1.f / 10) { augmentedDeltaTime = 1.f / 10; }
+		augmentedDeltaTime *= 100;
 
-		gameLogic(augmentedDeltaTime, frame);
+
+		// Main game loop
+		gameLogic(augmentedDeltaTime);
 		BeginDrawing();
-		ClearBackground(BLACK);
-		renderGame(frame);
+			ClearBackground(BLACK);
+			renderGame();
 		EndDrawing();
-		frame = (frame + 1) % 61;
 	}
+	closeGame();
 	CloseWindow();
 }

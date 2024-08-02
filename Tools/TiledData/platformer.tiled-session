@@ -1,0 +1,59 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "demoLevel..tmx": {
+            "scale": 3.3064453124999997,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": -0.15121980034260218,
+                "y": -0.15121980034260218
+            }
+        },
+        "demoLevel.json": {
+            "scale": 3,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": -32.16666666666666,
+                "y": 90.83333333333333
+            }
+        },
+        "demoLevel.tmx": {
+            "scale": 3,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 51.166666666666686,
+                "y": 15.833333333333343
+            }
+        },
+        "demoLevel.tmx#tileset": {
+            "scaleInDock": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Users/nisha/Code/Game-dev/Platformer-v3/Tools/TiledData",
+    "last.imagePath": "C:/Users/nisha/Code/Game-dev/Platformer-v3/assets",
+    "lastUsedTilesetExportFilter": "Tiled tileset files (*.tsx *.xml)",
+    "map.fixedSize": false,
+    "map.lastUsedExportFilter": "Lua files (*.lua)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 8,
+    "map.tileWidth": 8,
+    "openFiles": [
+    ],
+    "project": "platformer.tiled-project",
+    "property.type": "int",
+    "recentFiles": [
+        "demoLevel.tmx",
+        "demoLevel..tmx"
+    ],
+    "tileset.lastUsedFormat": "json",
+    "tileset.tileSize": {
+        "height": 8,
+        "width": 8
+    }
+}

@@ -13,9 +13,7 @@ namespace Assets
 		{
 			std::cout << "File " << filename << " doesn't exist!\n";
 			assert(false);
-#if PRODUCTION_BUILD == 1
-			exit(0);
-#endif
+			return 0;
 		}
 		Texture2D* t = new Texture2D();
 		*t = LoadTexture(filename.c_str());

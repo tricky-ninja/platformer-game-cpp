@@ -32,7 +32,7 @@ int main()
 		// Main game loop
 		gameLogic(augmentedDeltaTime);
 		BeginDrawing();
-			ClearBackground(BLACK);
+			ClearBackground(ORANGE);
 			renderGame();
 		EndDrawing();
 	}

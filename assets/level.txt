@@ -3554,6 +3554,33 @@
             "type": 0,
             "x": 1650,
             "y": 450
+        },
+        {
+            "collision": true,
+            "tileset": 0,
+            "tilesetX": 2,
+            "tilesetY": 1,
+            "type": 0,
+            "x": 100,
+            "y": -100
+        },
+        {
+            "collision": true,
+            "tileset": 0,
+            "tilesetX": 2,
+            "tilesetY": 1,
+            "type": 0,
+            "x": 100,
+            "y": -50
+        },
+        {
+            "collision": true,
+            "tileset": 0,
+            "tilesetX": 2,
+            "tilesetY": 1,
+            "type": 0,
+            "x": 100,
+            "y": 0
         }
     ]
 }

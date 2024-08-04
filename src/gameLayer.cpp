@@ -9,6 +9,12 @@
 
 using json = nlohmann::json;
 
+enum State
+{
+	MAIN_MENU,
+	GAME_LOOP
+};
+
 struct GameplayData
 {
 	bool isPaused;
@@ -30,16 +36,18 @@ void initGame(const int width, const int height)
 	data.windowSize.x = width;
 	data.windowSize.y = height;
 
+
+#pragma region game_logic_init
 	data.isPaused = false;
 
 	data.playerID = Objects::addEntity();
-	Objects::entities[data.playerID]->pos = glm::vec2(0,0);
+	Objects::entities[data.playerID]->pos = glm::vec2(0, 0);
 	Objects::entities[data.playerID]->size = glm::vec2(50, 75);
 
-	data.camera.target = Vector2({0.f,0.f});
-	data.camera.offset = Vector2({ width / 2.f, height/2.f });
+	data.camera.target = Vector2({ 0.f,0.f });
+	data.camera.offset = Vector2({ width / 2.f, height / 2.f });
 	data.camera.rotation = 0.f;
-	data.camera.zoom = 0.8f;
+	data.camera.zoom = 0.6f;
 
 	data.mainTilesetID = Assets::addTexture(ASSETS_PATH "tileset.png");
 
@@ -67,11 +75,24 @@ void initGame(const int width, const int height)
 		Objects::tiles.push_back(newTile);
 	}
 #pragma endregion
+#pragma endregion
+}
+
+void printPlayerCollision()
+{
+	const unsigned x = Objects::entities[data.playerID]->collisionSurface;
+	if (x == 0) std::cout << "NONE";
+	if (x & Surface::DOWN) std::cout << "Down-";
+	if (x & Surface::UP) std::cout << "UP-";
+	if (x & Surface::LEFT) std::cout << "LEFT-";
+	if (x & Surface::RIGHT) std::cout << "RIGHT-";
+	if (x & Surface::FULL_BLOCK) std::cout << "FULL_BLOCK-";
+	std::cout << "\n";
 }
 
 void resetGame()
 {
-	Objects::entities[data.playerID]->pos = glm::vec2(0,0);
+	Objects::entities[data.playerID]->pos = glm::vec2(0, 0);
 	Objects::entities[data.playerID]->vel = glm::vec2(0, 0);
 }
 
@@ -82,9 +103,11 @@ void gameLogic(float deltaTime)
 
 	if (!data.isPaused)
 	{
+		//printPlayerCollision();
+		int x = Objects::entities[data.playerID]->collisionSurface;
 
 		// Update camera - update y on landing, update x when player is near edges
-		if ((GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).x < (data.windowSize.x / 4)) || (GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).x > (data.windowSize.x / 4 * 3))) { 
+		if ((GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).x < (data.windowSize.x / 4)) || (GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).x > (data.windowSize.x / 4 * 3))) {
 			data.camera.target.x -= (data.camera.target.x - Objects::entities[data.playerID]->pos.x) * 0.02 * deltaTime;
 		}
 		if ((Objects::entities[data.playerID]->collisionSurface & Surface::DOWN) && data.camera.target.y != Objects::entities[data.playerID]->pos.y)
@@ -95,25 +118,36 @@ void gameLogic(float deltaTime)
 
 		// Update player
 		Objects::entities[data.playerID]->vel.y += 2 * deltaTime;
+		if (IsKeyDown(KEY_SPACE) && (Objects::entities[data.playerID]->collisionSurface & Surface::DOWN))
+		{
+			Objects::entities[data.playerID]->vel.y = -30;
+		}
 		if (IsKeyDown(KEY_A))
 		{
 			Objects::entities[data.playerID]->vel.x = -10;
+			/*if ((Objects::entities[data.playerID]->collisionSurface & Surface::LEFT) && !(Objects::entities[data.playerID]->collisionSurface & Surface::DOWN)) {
+				Objects::entities[data.playerID]->vel.y = 0;
+			}*/
 		}
 		else if (IsKeyDown(KEY_D))
 		{
 			Objects::entities[data.playerID]->vel.x = 10;
 		}
-		if (IsKeyDown(KEY_SPACE) && (Objects::entities[data.playerID]->collisionSurface & Surface::DOWN))
+
+
+		// If player is standing on a ONEWAY tile and is not at all colliding with any other NORMAL blocks then move the player down
+		if (IsKeyPressed(KEY_S) && (Objects::entities[data.playerID]->collisionSurface & Surface::DOWN) && !(Objects::entities[data.playerID]->collisionSurface & Surface::FULL_BLOCK))
 		{
-			Objects::entities[data.playerID]->vel.y = -30;
+			Objects::entities[data.playerID]->pos.y += 1;
 		}
+
 
 		Objects::move(data.playerID, deltaTime);
 		Objects::entities[data.playerID]->vel.x *= 0.25;	// Friction
 		if (Objects::entities[data.playerID]->collisionSurface & Surface::DOWN) Objects::entities[data.playerID]->vel.y = 0;
-		
-		// Game over
-		if (GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).y > data.windowSize.y + 200) resetGame();
+
+		// If player falls 150 tiles below the screen camera then reset the player position
+		if (GetWorldToScreen2D(Vector2({ Objects::entities[data.playerID]->pos.x, Objects::entities[data.playerID]->pos.y }), data.camera).y > data.windowSize.y + 150 * tileSize) resetGame();
 	}
 
 #pragma endregion
@@ -124,7 +158,7 @@ void gameLogic(float deltaTime)
 	{
 		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
-			Tile *newTile = new Tile;
+			Tile* newTile = new Tile;
 			Vector2 mousePos = GetScreenToWorld2D(GetMousePosition(), data.camera);
 			int adjustedX = (int)floor(mousePos.x / tileSize) * tileSize;
 			int adjustedY = (int)floor(mousePos.y / tileSize) * tileSize;
@@ -159,7 +193,7 @@ void gameLogic(float deltaTime)
 		{
 			json jsonObj;
 
-			for (const Tile *tile : Objects::tiles)
+			for (const Tile* tile : Objects::tiles)
 			{
 				jsonObj["tiles"].push_back({ {"x", tile->pos.x}, {"y", tile->pos.y}, {"collision", tile->hasCollision}, {"type", tile->type}, {"tileset", tile->tilesetID}, {"tilesetX", tile->tilesetPos.x}, {"tilesetY", tile->tilesetPos.y} });
 			}

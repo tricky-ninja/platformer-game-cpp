@@ -13,7 +13,9 @@ void Tile::render()
 {
 	if (tilesetID >= Assets::gameTextures.size())
 	{
-		DrawRectangle(this->pos.x, this->pos.y, tileSize, tileSize, WHITE);
+		DrawRectangle(this->pos.x, this->pos.y, tileSize, tileSize, PINK);
+		DrawRectangle(this->pos.x, this->pos.y, tileSize / 2, tileSize / 2, BLACK);
+		DrawRectangle(this->pos.x + tileSize/2, this->pos.y + tileSize / 2, tileSize / 2, tileSize / 2, BLACK);
 	}
 	else
 	{
@@ -61,6 +63,7 @@ bool Objects::isColliding(size_t entityID)
 	assert(entities.size() > entityID);
 	Entity* e = entities[entityID];
 
+	bool colliding = false;
 	for (auto tile : tiles)
 	{
 		if (!tile->hasCollision) continue;
@@ -68,10 +71,16 @@ bool Objects::isColliding(size_t entityID)
 		{
 			if (e->pos.y + e->size.y / 2 > tile->pos.y) continue;
 		}
-		if (e->isCollidingWithTile(tile->pos)) return true;
+		if (!e->isCollidingWithTile(tile->pos)) continue;
+
+		if (tile->type == TILE_NORMAL)
+		{
+			e->collisionSurface |= Surface::FULL_BLOCK;
+		}
+		colliding = true;
 	}
 
-	return false;
+	return colliding;
 }
 
 bool Objects::willCollide(size_t entityID, glm::vec2 moveAmt)
@@ -79,6 +88,7 @@ bool Objects::willCollide(size_t entityID, glm::vec2 moveAmt)
 	assert(entities.size() > entityID);
 	Entity* e = entities[entityID];
 
+	bool colliding = false;
 	for (auto tile : tiles)
 	{
 		if (!tile->hasCollision) continue;
@@ -86,10 +96,16 @@ bool Objects::willCollide(size_t entityID, glm::vec2 moveAmt)
 		{
 			if (e->pos.y + e->size.y/2 > tile->pos.y) continue;
 		}
-		if (e->willCollideWithTile(tile->pos, moveAmt)) return true;
+		if (!e->willCollideWithTile(tile->pos, moveAmt)) continue;
+
+		if (tile->type == TILE_NORMAL)
+		{
+			e->collisionSurface |= Surface::FULL_BLOCK;
+		}
+		colliding = true;
 	}
 
-	return false;
+	return colliding;
 }
 
 void Objects::moveX(size_t entityID, float deltaTime)
@@ -160,6 +176,8 @@ void Objects::moveY(size_t entityID, float deltaTime)
 
 void Objects::move(size_t entityID, float deltaTime)
 {
+	entities[entityID]->vel.x = std::min<float>(std::max<float>(entities[entityID]->vel.x, -100), 100);
+	entities[entityID]->vel.y = std::min<float>(std::max<float>(entities[entityID]->vel.y,-100),100);
 	moveX(entityID, deltaTime);
 	moveY(entityID, deltaTime);
 }

@@ -6,11 +6,12 @@
 
 namespace Surface
 {
-	const int NONE = 0;
-	const int LEFT = 0b1;
-	const int RIGHT = 0b10;
-	const int UP = 0b100;
-	const int DOWN = 0b1000;
+	const unsigned NONE = 0;
+	const unsigned LEFT = 0b1;
+	const unsigned RIGHT = 0b10;
+	const unsigned UP = 0b100;
+	const unsigned DOWN = 0b1000;
+	const unsigned FULL_BLOCK = 0b10000;
 };
 
 enum TileType
@@ -37,7 +38,7 @@ struct Entity
 	glm::i64vec2 size = {50,75};
 	glm::vec2 moveRemainder = { 0,0 };
 	glm::vec2 vel = { 0,0 };
-	char collisionSurface = Surface::NONE;
+	unsigned collisionSurface = Surface::NONE;
 	std::string texture="";
 
 	bool isCollidingWithTile(const glm::vec2& tile);
